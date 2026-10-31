@@ -1,0 +1,351 @@
+{
+  "info": {
+    "name": "Space Bounty Hunters — Midterm REST API",
+    "description": "Kotlin Ktor + PostgreSQL. Run in order: creates, patches, deletes a temporary hunt. Seed data remains.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/health",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Healthy\", () => pm.expect(pm.response.json().status).to.eql(\"ok\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Criminals - all",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/criminals/",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"At least 5 seeded criminals\", () => pm.expect(pm.response.json().length).to.be.at.least(5));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Criminals - combined filters",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/criminals/?min_reward=5000&armed=true&sort=-reward",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "const a=pm.response.json(); pm.test(\"All are armed and reward >= 5000\",()=>pm.expect(a.every(x=>x.armed===true && x.reward>=5000)).to.eql(true)); pm.test(\"Descending reward\",()=>pm.expect(a.every((x,i)=>i===0||a[i-1].reward>=x.reward)).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Criminals - all boolean filters",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/criminals/?has_crew=true&escape_master=true&max_reward=10000&sort=reward",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Criminal details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/criminals/1/",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Has nickname\",()=>pm.expect(pm.response.json()).to.have.property(\"nickname\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Hunts - all seeded logs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/hunts/",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"At least 10 seeded hunts\",()=>pm.expect(pm.response.json().length).to.be.at.least(10));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Hunts - filter by criminal",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/hunts/?criminal_id=1",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Only criminal 1\",()=>pm.expect(pm.response.json().every(x=>x.criminal_id===1)).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Create hunt",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/hunts/",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"criminal_id\": 1,\n  \"success\": false,\n  \"notes\": \"Target escaped through an asteroid field.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+              "const x=pm.response.json(); pm.collectionVariables.set(\"huntId\",String(x.id)); pm.test(\"Timestamp generated\",()=>pm.expect(x.created_at).to.be.a(\"string\")); pm.test(\"ID returned\",()=>pm.expect(x.id).to.be.a(\"number\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Get created hunt",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/hunts/{{huntId}}/",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Matches saved ID\",()=>pm.expect(String(pm.response.json().id)).to.eql(pm.collectionVariables.get(\"huntId\")));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Patch hunt",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/hunts/{{huntId}}/",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"success\": true,\n  \"notes\": \"Target captured at the asteroid station.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Patch applied\",()=>{let x=pm.response.json();pm.expect(x.success).to.eql(true);pm.expect(x.notes).to.include(\"captured\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Invalid criminal_id",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/hunts/",
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"criminal_id\": 999999999,\n  \"success\": false,\n  \"notes\": \"Invalid reference test.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+              "pm.test(\"Error returned\",()=>pm.expect(pm.response.json()).to.have.property(\"error\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Invalid filter",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/criminals/?armed=maybe",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Delete created hunt",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/hunts/{{huntId}}/",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Verify deleted hunt",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/hunts/{{huntId}}/",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8082"
+    },
+    {
+      "key": "huntId",
+      "value": "1"
+    }
+  ]
+}
